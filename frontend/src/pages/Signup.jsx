@@ -1,13 +1,18 @@
-// src/pages/Signup.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import "./Auth.css"; // import the CSS
 
-function Signup() {
-  // backend expects { name, email, password }
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+export default function Signup() {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // Add body class to remove scroll and center the page
+  useEffect(() => {
+    document.body.classList.add("auth-page");
+    return () => document.body.classList.remove("auth-page");
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -15,64 +20,29 @@ function Signup() {
     e.preventDefault();
     try {
       const res = await api.post("/users/signup", form);
-
-      // Save token
       localStorage.setItem("token", res.data.token);
-
-      // Save user data
       localStorage.setItem("user", JSON.stringify(res.data));
 
-      // ✅ If wallet not setup → go to setup wallet
-      if (!res.data.bankAccount) {
-        navigate("/setup-wallet");
-      } else {
-        // Already has wallet → go straight to dashboard
-        navigate("/dashboard");
-      }
+      if (!res.data.bankAccount) navigate("/setup-wallet");
+      else navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
     }
   };
 
   return (
-    <section className="card auth-card">
-      <h2 className="heading">Create account</h2>
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Full name"
-          className="input"
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-          placeholder="Email"
-          className="input"
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          value={form.password}
-          onChange={handleChange}
-          placeholder="Password (min 6)"
-          className="input"
-          required
-        />
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary">
-            Signup
-          </button>
-        </div>
-      </form>
-      {error && <p className="error">{error}</p>}
-    </section>
+    <div className="auth-container">
+      <section className="auth-card">
+        <h2 className="auth-title">Create Account</h2>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <input name="name" placeholder="Full Name" value={form.name} onChange={handleChange} required />
+          <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
+          <input name="phone" placeholder="Phone (10 digits)" value={form.phone} onChange={handleChange} required />
+          <input name="password" type="password" placeholder="Password (min 6)" value={form.password} onChange={handleChange} required />
+          <button type="submit" className="btn-primary">Signup</button>
+        </form>
+        {error && <p className="error-msg">{error}</p>}
+      </section>
+    </div>
   );
 }
-
-export default Signup;

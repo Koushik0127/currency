@@ -1,4 +1,4 @@
-// backend/src/routes/userRoutes.js
+// backend/routes/userRoutes.jsx
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -8,13 +8,11 @@ const router = express.Router();
 
 // ------------------- UTILS -------------------
 
-// 🔹 Token generator
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1h" });
 };
 
-// 🔹 Middleware to verify JWT
-const authMiddleware = (req, res, next) => {
+export const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "No token provided" });
@@ -23,7 +21,6 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // decoded should have shape { id: "...", iat: ..., exp: ... }
     req.user = { id: decoded.id };
     next();
   } catch (error) {
@@ -33,7 +30,7 @@ const authMiddleware = (req, res, next) => {
 
 // ------------------- ROUTES -------------------
 
-// 🔹 Quick test route
+// Ping
 router.get("/ping", (req, res) => {
   res.json({ ok: true, route: "/api/users/ping" });
 });
@@ -41,35 +38,28 @@ router.get("/ping", (req, res) => {
 // 🔹 Signup
 router.post("/signup", async (req, res) => {
   try {
-    // accept optional name (frontend may send it), but primary required fields are email + password
-    const { name, email, password } = req.body;
+    const { name, email, phone, password } = req.body;
 
-    // basic validation
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    if (!email || !phone || !password) {
+      return res.status(400).json({ message: "Email, phone, and password are required" });
     }
 
-    // check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User with this email or phone already exists" });
     }
 
     if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 6 characters long" });
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
     }
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create user — bankAccount/ifsc/currency remain null/default until setup
     const newUser = new User({
-      ...(name ? { name } : {}), // optional if your schema includes name
+      ...(name ? { name } : {}),
       email,
+      phone,
       password: hashedPassword,
-      // bankAccount, ifsc, currency default are handled by the User model schema
     });
 
     await newUser.save();
@@ -77,9 +67,10 @@ router.post("/signup", async (req, res) => {
     res.status(201).json({
       _id: newUser._id,
       email: newUser.email,
-      bankAccount: newUser.bankAccount || null,
-      ifsc: newUser.ifsc || null,
-      currency: newUser.currency || "INR",
+      phone: newUser.phone,
+      bankAccount: newUser.bankAccount,
+      ifsc: newUser.ifsc,
+      currency: newUser.currency,
       token: generateToken(newUser._id),
     });
   } catch (error) {
@@ -87,16 +78,26 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// 🔹 Login
+// 🔹 Login (email OR phone)
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Email/Phone and password are required" });
     }
 
-    const user = await User.findOne({ email });
+    // Detect if identifier is email or phone
+    let user;
+    const isEmail = /^\S+@\S+\.\S+$/.test(identifier);
+    if (isEmail) {
+      user = await User.findOne({ email: identifier });
+    } else {
+      // clean phone number
+      const cleanPhone = identifier.replace(/\D/g, "");
+      user = await User.findOne({ phone: cleanPhone });
+    }
+
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -105,9 +106,10 @@ router.post("/login", async (req, res) => {
     res.json({
       _id: user._id,
       email: user.email,
-      bankAccount: user.bankAccount || null,
-      ifsc: user.ifsc || null,
-      currency: user.currency || "INR",
+      phone: user.phone,
+      bankAccount: user.bankAccount,
+      ifsc: user.ifsc,
+      currency: user.currency,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -115,64 +117,24 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ------------------- WALLET SETUP -------------------
-
-// 🔹 Setup Wallet (bank + currency) – protected
-// router.post("/setup-wallet", authMiddleware, async (req, res) => {
-//   try {
-//     const { bankAccount, ifsc, currency } = req.body;
-
-//     const user = await User.findById(req.user.id);
-//     if (!user) return res.status(404).json({ message: "User not found" });
-
-//     user.bankAccount = bankAccount;
-//     user.ifsc = ifsc;
-//     user.currency = currency || "INR";
-
-//     await user.save();
-
-//     res.json({
-//       message: "Wallet setup complete ✅",
-//       user: {
-//         _id: user._id,
-//         email: user.email,
-//         bankAccount: user.bankAccount,
-//         ifsc: user.ifsc,
-//         currency: user.currency,
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: "Server error", error: error.message });
-//   }
-// });
-
-
-// ------------------- WALLET SETUP -------------------
+// 🔹 Setup Wallet
 router.post("/setup-wallet", authMiddleware, async (req, res) => {
   try {
     const { bankAccount, ifsc, currency } = req.body;
 
-    // ✅ Manual validations before saving
     if (!/^\d{9,18}$/.test(bankAccount)) {
-      return res.status(400).json({
-        message: "Bank account must be 9–18 digits",
-      });
+      return res.status(400).json({ message: "Bank account must be 9–18 digits" });
     }
-
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc)) {
-      return res.status(400).json({
-        message: "Invalid IFSC format. Must be like ABCD0XXXXXX",
-      });
+      return res.status(400).json({ message: "Invalid IFSC format" });
     }
 
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Normalize values
     user.bankAccount = bankAccount;
-    user.ifsc = ifsc.toUpperCase(); // 👈 force uppercase
+    user.ifsc = ifsc.toUpperCase();
     user.currency = currency || "INR";
-
     await user.save();
 
     res.json({
@@ -180,6 +142,7 @@ router.post("/setup-wallet", authMiddleware, async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
+        phone: user.phone,
         bankAccount: user.bankAccount,
         ifsc: user.ifsc,
         currency: user.currency,
@@ -189,7 +152,5 @@ router.post("/setup-wallet", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
-
-
 
 export default router;

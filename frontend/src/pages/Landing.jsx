@@ -18,15 +18,13 @@ export default function Landing() {
             <Link to="/login" className="btn btn-secondary">Log In</Link>
           </div>
         </div>
+
         <div className="hero-image">
-       <img
-  src="/Transfer.png"
-  alt="Wallet illustration"
-  className="transfer-img"
-/>
-
-
-
+          <img
+            src="/Transfer.png"
+            alt="Wallet illustration"
+            className="transfer-img"
+          />
         </div>
       </section>
 

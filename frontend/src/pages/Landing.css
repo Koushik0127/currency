@@ -7,6 +7,7 @@
   padding: 3rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  background-color: #f9fafb; /* light simple background */
 }
 
 .hero {
@@ -37,31 +38,21 @@
   gap: 1rem;
 }
 
-.btn {
-  padding: 0.75rem 1.5rem;
+/* Both buttons same style and color */
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem; /* same size */
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
   transition: background 0.3s ease;
-}
-
-.btn-primary {
-  background-color: #2563eb; /* blue-600 */
+  background-color: #2563eb; /* same color for both */
   color: white;
 }
 
-.btn-primary:hover {
-  background-color: #1e40af; /* darker */
-}
-
-.btn-secondary {
-  border: 1px solid #ccc;
-  color: #333;
-  background: white;
-}
-
+.btn-primary:hover,
 .btn-secondary:hover {
-  background-color: #f3f4f6;
+  background-color: #1e40af; /* darker on hover */
 }
 
 .hero-image img {
@@ -82,7 +73,6 @@
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
 }
-
 
 .transfer-img {
   width: 400px;   /* adjust size */

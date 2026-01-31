@@ -1,0 +1,64 @@
+/* src/pages/Auth.css */
+
+/* Container for Login, Signup, SetupWallet */
+.auth-card, .setup-wallet-container {
+  max-width: 400px;
+  margin: 5rem auto;
+  padding: 2rem 1.5rem;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.auth-card h2,
+.setup-wallet-container h2 {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.auth-card form,
+.setup-wallet-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-card input,
+.auth-card select,
+.setup-wallet-container input,
+.setup-wallet-container select {
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.auth-card button,
+.setup-wallet-container button {
+  padding: 0.8rem;
+  font-size: 1rem;
+  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.auth-card button:hover,
+.setup-wallet-container button:hover {
+  opacity: 0.9;
+}
+
+.error {
+  color: red;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Disable scroll for auth pages */
+body.auth-page {
+  overflow: hidden;
+  background-color: #f5f6fa;
+}

@@ -36,4 +36,4 @@ It is a **full-stack web application** built with **React.js, Node.js, Express, 
 
 ---
 
-## 🔹 Project Structure
+
